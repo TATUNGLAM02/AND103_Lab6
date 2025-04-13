@@ -23,6 +23,13 @@
 
 
             >
+            <Spinner
+                android:id="@+id/spinnerSort"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                />
+
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/ed_search_name"
                 android:layout_width="match_parent"
@@ -46,6 +53,7 @@
 
 
             >
+
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/ed_search_money"
                 android:layout_width="match_parent"

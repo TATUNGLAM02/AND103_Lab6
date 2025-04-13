@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,6 +17,7 @@ import com.example.and103_thanghtph31577_lab5.model.Response;
 import com.example.and103_thanghtph31577_lab5.services.HttpRequest;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -40,24 +41,28 @@ public class HomeActivity extends AppCompatActivity implements FruitAdapter.Frui
         token = sharedPreferences.getString("token", "");
         httpRequest = new HttpRequest(token);
 
-        // Khởi tạo adapter
         fruitAdapter = new FruitAdapter(this, list, this);
         binding.rcvFruit.setAdapter(fruitAdapter);
 
-        userListener();
+        // Spinner sort
+        ArrayAdapter<String> sortAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_spinner_item,
+                new String[]{"Giá tăng dần", "Giá giảm dần"});
+        sortAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        binding.spinnerSort.setAdapter(sortAdapter);
+
+        setListeners();
         loadFruitData();
     }
 
-    private void userListener() {
+    private void setListeners() {
         binding.btnAdd.setOnClickListener(v -> {
             Intent intent = new Intent(HomeActivity.this, AddFruitActivity.class);
             startActivity(intent);
         });
 
-        binding.btnLoc.setOnClickListener(v -> {
-            list.clear();
-            loadFruitData();
-        });
+        binding.btnLoc.setOnClickListener(v -> filterFruits());
     }
 
     private void loadFruitData() {
@@ -67,7 +72,7 @@ public class HomeActivity extends AppCompatActivity implements FruitAdapter.Frui
                 if (response.isSuccessful() && response.body() != null && response.body().getStatus() == 200) {
                     list.clear();
                     list.addAll(response.body().getData());
-                    fruitAdapter.notifyDataSetChanged();
+                    fruitAdapter.setData(new ArrayList<>(list));
                 } else {
                     Toast.makeText(HomeActivity.this, "Không có dữ liệu", Toast.LENGTH_SHORT).show();
                 }
@@ -80,12 +85,53 @@ public class HomeActivity extends AppCompatActivity implements FruitAdapter.Frui
         });
     }
 
+    private void filterFruits() {
+        String name = binding.edSearchName.getText().toString().trim();
+        String priceStr = binding.edSearchMoney.getText().toString().trim();
+        int priceFilter = priceStr.isEmpty() ? 0 : Integer.parseInt(priceStr);
+        String sort = binding.spinnerSort.getSelectedItem().toString();
+
+        ArrayList<Fruit> filteredList = new ArrayList<>();
+        for (Fruit fruit : list) {
+            boolean matchName = name.isEmpty() || fruit.getName().toLowerCase().contains(name.toLowerCase());
+
+            int price = 0;
+            try {
+                price = Integer.parseInt(fruit.getPrice()); // chuyển từ String sang int
+            } catch (Exception e) {
+                continue;
+            }
+
+            boolean matchPrice = price >= priceFilter;
+
+            if (matchName && matchPrice) {
+                filteredList.add(fruit);
+            }
+        }
+
+        if (sort.equals("Giá tăng dần")) {
+            Collections.sort(filteredList, (f1, f2) -> {
+                int p1 = Integer.parseInt(f1.getPrice());
+                int p2 = Integer.parseInt(f2.getPrice());
+                return Integer.compare(p1, p2);
+            });
+        } else {
+            Collections.sort(filteredList, (f1, f2) -> {
+                int p1 = Integer.parseInt(f1.getPrice());
+                int p2 = Integer.parseInt(f2.getPrice());
+                return Integer.compare(p2, p1);
+            });
+        }
+
+        fruitAdapter.setData(filteredList);
+    }
+
     Callback<Response<Fruit>> responseFruitAPI = new Callback<Response<Fruit>>() {
         @Override
         public void onResponse(Call<Response<Fruit>> call, retrofit2.Response<Response<Fruit>> response) {
             if (response.isSuccessful() && response.body().getStatus() == 200) {
                 Toast.makeText(HomeActivity.this, response.body().getMessenger(), Toast.LENGTH_SHORT).show();
-                loadFruitData(); // refresh lại danh sách
+                loadFruitData();
             }
         }
 
@@ -124,7 +170,6 @@ public class HomeActivity extends AppCompatActivity implements FruitAdapter.Frui
     @Override
     protected void onResume() {
         super.onResume();
-        list.clear();
         loadFruitData();
     }
 }

@@ -69,6 +69,11 @@ public class FruitAdapter extends RecyclerView.Adapter<FruitAdapter.ViewHolder> 
     public int getItemCount() {
         return (list != null) ? list.size() : 0;
     }
+    public void setData(ArrayList<Fruit> newList) {
+        this.list = newList;
+        notifyDataSetChanged();
+    }
+
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         ItemFruitBinding binding;
